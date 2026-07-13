@@ -133,6 +133,24 @@
             border-style: dashed;
         }
         .field-hint { font-size: .7rem; color: var(--text-muted); white-space: nowrap; }
+        .custom-field-row { gap: 6px !important; align-items: center !important; }
+        .field-name-input {
+            width: 180px; flex-shrink: 0; padding: 6px 10px; border: 1px solid var(--border);
+            border-radius: var(--radius-sm); font-size: .82rem; font-family: inherit;
+            background: #fff; color: var(--primary); font-weight: 600; outline: none;
+            transition: border-color .2s;
+        }
+        .field-name-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+        .field-name-input::placeholder { color: var(--text-muted); font-weight: 400; }
+        .btn-del {
+            width: 28px; height: 28px; border: 1px solid transparent; background: none;
+            color: var(--text-muted); cursor: pointer; border-radius: 4px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: .8rem; transition: all .15s; flex-shrink: 0;
+        }
+        .btn-del:hover { background: var(--danger-light); color: var(--danger); border-color: var(--danger); }
+        .custom-add-row { margin-top: 8px; }
+        .btn-sm { padding: 6px 14px; font-size: .78rem; }
         .page-labels {
             font-size: .82rem; color: var(--text); padding: 8px 12px;
             background: var(--input-bg); border-radius: var(--radius-sm);
@@ -200,6 +218,7 @@
             .drop-zone { padding: 32px 16px; }
             .field-row { flex-direction: column; align-items: stretch; gap: 2px; }
             .field-label { width: auto; text-align: left; padding: 0; }
+            .field-name-input { width: 100%; }
             .editor-header { flex-direction: column; align-items: stretch; }
             .editor-actions { justify-content: stretch; }
             .editor-actions .btn { flex: 1; justify-content: center; }
@@ -456,20 +475,24 @@
         }
         h += '</div>';
 
-        // Personalizados
+        // Personalizados — SIEMPRE visible, con nombre editable + botón borrar
+        h += '<h3>Campos Personalizados</h3><div class="fields-grid">';
         const ck = Object.keys(m.personalizados);
-        if (ck.length) {
-            h += '<h3>Campos Personalizados</h3><div class="fields-grid">';
-            for (const k of ck) {
-                h += `<div class="field-row">
-                    <label class="field-label">${esc(k)}</label>
-                    <input class="field-input" type="text" value="${esc(m.personalizados[k])}"
-                        data-fid="${a.id}" data-key="${k}" data-type="custom"
-                        oninput="updCampo(this)">
-                </div>`;
-            }
-            h += '</div>';
+        for (const k of ck) {
+            h += `<div class="field-row custom-field-row">
+                <input class="field-name-input" type="text" value="${esc(k)}" placeholder="nombre_campo"
+                    data-fid="${a.id}" data-oldkey="${k}"
+                    oninput="updCampoNombre(this)" onblur="updCampoNombre(this)">
+                <input class="field-input" type="text" value="${esc(m.personalizados[k])}"
+                    data-fid="${a.id}" data-key="${k}" data-type="custom"
+                    oninput="updCampo(this)">
+                <button class="btn-del" onclick="removeCampoCustom('${a.id}', this.parentElement.querySelector('.field-name-input').dataset.oldkey)" title="Eliminar campo">✕</button>
+            </div>`;
         }
+        h += `<div class="field-row custom-add-row">
+            <button class="btn btn-secondary btn-sm" onclick="addCampoCustom('${a.id}')">+ Añadir campo personalizado</button>
+        </div>`;
+        h += '</div>';
 
         // XMP
         const xk = Object.keys(m.xmp);
@@ -531,6 +554,58 @@
         a.tieneCambios = false;
         render();
         toast('Metadatos reseteados', 'info');
+    }
+
+    // --- Campos personalizados: crear / eliminar / renombrar ---
+    function addCampoCustom(fid) {
+        const a = estado.archivos.find(x => x.id === fid);
+        if (!a) return;
+        let name = 'nuevo_campo';
+        let i = 1;
+        while (a.metadatos.personalizados.hasOwnProperty(name)) { name = 'nuevo_campo_' + (i++); }
+        a.metadatos.personalizados[name] = '';
+        a.tieneCambios = true;
+        render();
+        // Focus el input del nombre recién creado
+        setTimeout(() => {
+            const inp = document.querySelector(`.field-name-input[data-oldkey="${name}"]`);
+            if (inp) { inp.focus(); inp.select(); }
+        }, 60);
+    }
+
+    function removeCampoCustom(fid, key) {
+        const a = estado.archivos.find(x => x.id === fid);
+        if (!a) return;
+        delete a.metadatos.personalizados[key];
+        a.tieneCambios = JSON.stringify(a.metadatos.estandar) !== JSON.stringify(a.originales.estandar)
+                      || JSON.stringify(a.metadatos.personalizados) !== JSON.stringify(a.originales.personalizados);
+        render();
+    }
+
+    function updCampoNombre(input) {
+        const a = estado.archivos.find(x => x.id === input.dataset.fid);
+        if (!a) return;
+        const oldKey = input.dataset.oldkey;
+        const newKey = input.value.trim();
+        if (!newKey || newKey === oldKey) return;
+        // No permitir nombres duplicados
+        if (a.metadatos.personalizados.hasOwnProperty(newKey) && newKey !== oldKey) {
+            input.value = oldKey;
+            toast('Ya existe un campo con ese nombre', 'warning');
+            return;
+        }
+        // Renombrar: borrar viejo, crear nuevo
+        const val = a.metadatos.personalizados[oldKey];
+        delete a.metadatos.personalizados[oldKey];
+        a.metadatos.personalizados[newKey] = val;
+        // Actualizar atributos DOM
+        input.dataset.oldkey = newKey;
+        const valInput = input.parentElement.querySelector('.field-input');
+        if (valInput) valInput.dataset.key = newKey;
+        a.tieneCambios = JSON.stringify(a.metadatos.estandar) !== JSON.stringify(a.originales.estandar)
+                      || JSON.stringify(a.metadatos.personalizados) !== JSON.stringify(a.originales.personalizados);
+        renderLista(); renderToolbar();
+        // NO renderizar editor (preserva foco)
     }
 
     // ============================================================
