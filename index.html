@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisorMetadatosPDF</title>
+    <style>
+        /* ===== RESET & BASE ===== */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --primary: #2563eb; --primary-hover: #1d4ed8; --primary-light: #eff6ff;
+            --accent: #f97316; --accent-light: #fff7ed;
+            --success: #10b981; --success-light: #ecfdf5;
+            --warning: #f59e0b; --warning-light: #fffbeb;
+            --danger: #ef4444; --danger-light: #fef2f2;
+            --bg: #f8fafc; --surface: #ffffff;
+            --text: #1e293b; --text-sec: #64748b; --text-muted: #94a3b8;
+            --border: #e2e8f0; --input-bg: #f1f5f9;
+            --radius: 8px; --radius-sm: 6px;
+            --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+            --shadow-lg: 0 4px 12px rgba(0,0,0,.1);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg); color: var(--text); line-height: 1.5;
+            min-height: 100vh; padding: 0;
+        }
+        .app { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
+
+        /* ===== HEADER ===== */
+        .header { text-align: center; margin-bottom: 24px; }
+        .header h1 { font-size: 1.6rem; font-weight: 700; color: var(--text); }
+        .subtitle { color: var(--text-sec); font-size: .9rem; margin-top: 4px; }
+
+        /* ===== DROP ZONE ===== */
+        .drop-zone {
+            border: 2px dashed var(--border); border-radius: var(--radius);
+            background: var(--surface); padding: 48px 24px; text-align: center;
+            cursor: pointer; transition: all .2s ease; position: relative;
+        }
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: var(--primary); background: var(--primary-light);
+        }
+        .drop-zone.dragover { transform: scale(1.01); box-shadow: var(--shadow-lg); }
+        .drop-zone.has-files { padding: 20px 24px; }
+        .drop-icon { font-size: 2.5rem; margin-bottom: 8px; }
+        .drop-text { font-size: 1rem; color: var(--text); font-weight: 500; }
+        .drop-hint { font-size: .8rem; color: var(--text-muted); margin-top: 4px; }
+
+        /* ===== TOOLBAR ===== */
+        .toolbar {
+            display: none; align-items: center; justify-content: space-between;
+            gap: 12px; margin-top: 16px; flex-wrap: wrap;
+        }
+        .toolbar-left { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 200px; }
+        .toolbar-right { display: flex; align-items: center; gap: 12px; }
+        .search-input {
+            width: 100%; max-width: 280px; padding: 8px 12px; border: 1px solid var(--border);
+            border-radius: var(--radius-sm); font-size: .85rem; background: var(--surface);
+            color: var(--text); outline: none; transition: border-color .2s;
+        }
+        .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+        .counter { font-size: .8rem; color: var(--text-sec); white-space: nowrap; }
+
+        /* ===== FILE LIST ===== */
+        .file-list { margin-top: 12px; }
+        .file-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 14px; background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); margin-bottom: 6px; cursor: pointer;
+            transition: all .15s ease; position: relative;
+        }
+        .file-item:hover { border-color: #cbd5e1; background: #fafbfc; }
+        .file-item.selected { border-color: var(--primary); background: var(--primary-light); }
+        .file-item.modified { border-left: 3px solid var(--accent); }
+        .file-item.exported { border-left: 3px solid var(--success); }
+        .file-icon { font-size: 1.1rem; flex-shrink: 0; }
+        .file-name {
+            font-size: .85rem; font-weight: 500; color: var(--text);
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0;
+        }
+        .file-meta { font-size: .75rem; color: var(--text-muted); white-space: nowrap; flex-shrink: 0; }
+        .badge {
+            font-size: .65rem; padding: 2px 6px; border-radius: 10px;
+            font-weight: 600; white-space: nowrap; flex-shrink: 0;
+        }
+        .badge-warn { background: var(--accent-light); color: var(--accent); }
+        .badge-ok { background: var(--success-light); color: var(--success); }
+        .btn-icon {
+            width: 28px; height: 28px; border: none; background: none;
+            color: var(--text-muted); cursor: pointer; border-radius: 4px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: .8rem; transition: all .15s; flex-shrink: 0;
+        }
+        .btn-icon:hover { background: var(--danger-light); color: var(--danger); }
+
+        /* ===== EDITOR ===== */
+        .editor {
+            display: none; margin-top: 16px; background: var(--surface);
+            border: 1px solid var(--border); border-radius: var(--radius);
+            padding: 20px 24px; box-shadow: var(--shadow);
+        }
+        .editor-header {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 12px; margin-bottom: 16px; flex-wrap: wrap;
+        }
+        .editor-header h2 { font-size: 1.05rem; font-weight: 600; }
+        .editor-actions { display: flex; gap: 8px; }
+        .editor h3 {
+            font-size: .8rem; font-weight: 600; color: var(--text-sec);
+            text-transform: uppercase; letter-spacing: .04em;
+            margin: 16px 0 8px; padding-bottom: 4px;
+            border-bottom: 1px solid var(--border);
+        }
+        .fields-grid { display: flex; flex-direction: column; gap: 6px; }
+        .field-row { display: flex; align-items: center; gap: 10px; }
+        .field-label {
+            font-size: .8rem; font-weight: 500; color: var(--text-sec);
+            width: 140px; flex-shrink: 0; text-align: right; padding-right: 4px;
+        }
+        .field-input {
+            flex: 1; padding: 6px 10px; border: 1px solid var(--border);
+            border-radius: var(--radius-sm); font-size: .82rem; font-family: inherit;
+            background: var(--input-bg); color: var(--text); outline: none;
+            transition: border-color .2s, box-shadow .2s; min-width: 0;
+        }
+        .field-input:focus {
+            border-color: var(--primary); background: var(--surface);
+            box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+        }
+        .field-input.readonly {
+            background: #f8fafc; color: var(--text-muted); cursor: default;
+            border-style: dashed;
+        }
+        .field-hint { font-size: .7rem; color: var(--text-muted); white-space: nowrap; }
+        .page-labels {
+            font-size: .82rem; color: var(--text); padding: 8px 12px;
+            background: var(--input-bg); border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+        .page-labels strong { color: var(--primary); }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            padding: 8px 16px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+            font-size: .82rem; font-weight: 500; cursor: pointer; transition: all .15s;
+            display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+            font-family: inherit;
+        }
+        .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-secondary { background: var(--surface); color: var(--text); }
+        .btn-secondary:hover { background: var(--bg); }
+        .btn-danger { background: var(--surface); color: var(--danger); border-color: var(--danger); }
+        .btn-danger:hover { background: var(--danger-light); }
+        .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+        /* ===== EMPTY STATE ===== */
+        .empty-state {
+            text-align: center; padding: 32px; color: var(--text-muted);
+            font-size: .85rem;
+        }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            text-align: center; margin-top: 40px; padding-top: 16px;
+            border-top: 1px solid var(--border); font-size: .75rem; color: var(--text-muted);
+        }
+        .footer a { color: var(--primary); text-decoration: none; }
+
+        /* ===== TOAST ===== */
+        .toast {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+            padding: 10px 20px; border-radius: var(--radius); font-size: .82rem;
+            font-weight: 500; z-index: 9999; opacity: 0; transition: all .3s ease;
+            box-shadow: var(--shadow-lg); max-width: 90vw; text-align: center;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .toast-info { background: var(--primary); color: #fff; }
+        .toast-success { background: var(--success); color: #fff; }
+        .toast-warning { background: var(--warning); color: #fff; }
+        .toast-error { background: var(--danger); color: #fff; }
+
+        /* ===== LOADING ===== */
+        .loading-bar {
+            height: 3px; background: var(--border); border-radius: 2px;
+            overflow: hidden; margin-top: 8px; display: none;
+        }
+        .loading-bar.active { display: block; }
+        .loading-bar::after {
+            content: ''; display: block; height: 100%; width: 30%;
+            background: var(--primary); border-radius: 2px;
+            animation: loading-slide 1s ease-in-out infinite;
+        }
+        @keyframes loading-slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 640px) {
+            .app { padding: 16px 12px 60px; }
+            .drop-zone { padding: 32px 16px; }
+            .field-row { flex-direction: column; align-items: stretch; gap: 2px; }
+            .field-label { width: auto; text-align: left; padding: 0; }
+            .editor-header { flex-direction: column; align-items: stretch; }
+            .editor-actions { justify-content: stretch; }
+            .editor-actions .btn { flex: 1; justify-content: center; }
+            .file-meta { display: none; }
+            .toolbar { flex-direction: column; align-items: stretch; }
+            .toolbar-right { justify-content: space-between; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <h1>📄 VisorMetadatosPDF</h1>
+            <p class="subtitle">Visualiza, edita y sobrescribe metadatos de PDFs — 100% en tu navegador</p>
+        </header>
+
+        <div id="dropZone" class="drop-zone">
+            <div class="drop-icon">📁</div>
+            <p class="drop-text">Arrastra PDFs o carpetas aquí</p>
+            <p class="drop-hint">o haz clic para seleccionar archivos</p>
+            <input type="file" id="fileInput" multiple accept=".pdf" hidden>
+        </div>
+
+        <div id="loadingBar" class="loading-bar"></div>
+
+        <div id="toolbar" class="toolbar">
+            <div class="toolbar-left">
+                <input type="text" id="searchInput" class="search-input" placeholder="🔍 Filtrar archivos...">
+            </div>
+            <div class="toolbar-right">
+                <span id="counter" class="counter"></span>
+                <button class="btn btn-primary" id="exportAllBtn" onclick="exportarTodo()">📥 Exportar todo (ZIP)</button>
+            </div>
+        </div>
+
+        <div id="fileList" class="file-list"></div>
+        <div id="editor" class="editor"></div>
+
+        <footer class="footer">
+            Hecho con ❤️ por <strong>David Antizar</strong> — pdf-lib · pdf.js · JSZip
+        </footer>
+    </div>
+
+    <!-- Librerías CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+    <script>
+    // ============================================================
+    // CONFIGURACIÓN
+    // ============================================================
+    const CAMPOS_ESTANDAR = [
+        { key: 'title',         label: 'Título',            pdfKey: 'Title',        editable: true },
+        { key: 'author',        label: 'Autor',             pdfKey: 'Author',       editable: true },
+        { key: 'subject',       label: 'Asunto',            pdfKey: 'Subject',      editable: true },
+        { key: 'keywords',      label: 'Palabras Clave',    pdfKey: 'Keywords',     editable: true },
+        { key: 'creator',       label: 'Creador',           pdfKey: 'Creator',      editable: false },
+        { key: 'producer',      label: 'Productor',         pdfKey: 'Producer',     editable: false },
+        { key: 'creationDate',  label: 'Fecha Creación',    pdfKey: 'CreationDate', editable: true },
+        { key: 'modDate',       label: 'Fecha Modificación',pdfKey: 'ModDate',      editable: true },
+    ];
+
+    // ============================================================
+    // ESTADO
+    // ============================================================
+    const estado = { archivos: [], seleccionado: null, filtro: '' };
+
+    // ============================================================
+    // UTILIDADES
+    // ============================================================
+    const $ = id => document.getElementById(id);
+    const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    const esc = s => s == null ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+    function fmtTamano(b) {
+        if (b < 1024) return b + ' B';
+        if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+        return (b / 1048576).toFixed(1) + ' MB';
+    }
+    function fmtFecha(d) {
+        if (!d || isNaN(d.getTime())) return '';
+        return d.toISOString().slice(0, 10);
+    }
+
+    // ============================================================
+    // PARSEO DE PDF
+    // ============================================================
+    async function parsearPDF(file) {
+        const buf = await file.arrayBuffer();
+        const bytes = new Uint8Array(buf);
+
+        // --- pdf-lib: metadatos estándar + custom ---
+        const pdfDoc = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
+        const estandar = {};
+        estandar.title       = pdfDoc.getTitle()       || '';
+        estandar.author      = pdfDoc.getAuthor()      || '';
+        estandar.subject     = pdfDoc.getSubject()     || '';
+        estandar.keywords    = pdfDoc.getKeywords()    || '';
+        estandar.creator     = pdfDoc.getCreator()     || '';
+        estandar.producer    = pdfDoc.getProducer()    || '';
+        estandar.creationDate= fmtFecha(pdfDoc.getCreationDate());
+        estandar.modDate     = fmtFecha(pdfDoc.getModificationDate());
+
+        // Campos personalizados (Info dict raw)
+        const personalizados = {};
+        try {
+            const infoRef = pdfDoc.context.trailerInfo.Info;
+            if (infoRef) {
+                const info = pdfDoc.context.lookup(infoRef);
+                if (info && typeof info.entries === 'function') {
+                    for (const [k, v] of info.entries()) {
+                        const name = k.value;
+                        if (!CAMPOS_ESTANDAR.find(c => '/' + c.pdfKey === name)) {
+                            personalizados[name] = pdfObjStr(v);
+                        }
+                    }
+                }
+            }
+        } catch (e) { /* PDF corrupto o inusual */ }
+
+        // --- pdf.js: XMP + page labels + pageCount ---
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+        let xmpFields = {}, pageLabels = [], pageCount = 0;
+        try {
+            const jsDoc = await pdfjsLib.getDocument({ data: bytes.slice(0) }).promise;
+            pageCount = jsDoc.numPages;
+            const meta = await jsDoc.getMetadata();
+            if (meta.metadata && meta.metadata.xml) xmpFields = parseXMP(meta.metadata.xml);
+            const labels = await jsDoc.getPageLabels();
+            if (labels && labels.length) {
+                pageLabels = labels.map((l, i) => ({
+                    pagina: i + 1,
+                    etiqueta: typeof l === 'string' ? l : fmtLabel(l)
+                }));
+            }
+        } catch (e) { /* pdf.js fallback: sin XMP ni labels */ }
+
+        return {
+            id: uid(), nombre: file.name, tamano: file.size, paginas: pageCount,
+            metadatos: { estandar, personalizados, xmp: xmpFields, pageLabels },
+            originales: { estandar: {...estandar}, personalizados: {...personalizados} },
+            bytesOrig: bytes, tieneCambios: false, estado: 'cargado'
+        };
+    }
+
+    function pdfObjStr(obj) {
+        if (!obj) return '';
+        if (typeof obj.value === 'string') return obj.value;
+        if (obj.value != null) return String(obj.value);
+        return String(obj);
+    }
+
+    function fmtLabel(l) {
+        if (typeof l === 'string') return l;
+        const p = l.prefix || '', s = l.start || 1;
+        const style = l.style || l.type || 'numeric';
+        if (style === 'romanUpper') return p + toRoman(s).toUpperCase();
+        if (style === 'romanLower') return p + toRoman(s).toLowerCase();
+        return p + s;
+    }
+    function toRoman(n) {
+        const V = [1000,900,500,400,100,90,50,40,10,9,5,4,1];
+        const S = ['M','CM','D','CD','C','XC','L','XL','X','IX','V','IV','I'];
+        let r = '';
+        for (let i = 0; i < V.length; i++) while (n >= V[i]) { r += S[i]; n -= V[i]; }
+        return r;
+    }
+
+    function parseXMP(xml) {
+        if (!xml) return {};
+        try {
+            const doc = new DOMParser().parseFromString(xml, 'application/xml');
+            const fields = {};
+            const walk = doc.createTreeWalker(doc.documentElement, NodeFilter.SHOW_ELEMENT);
+            while (walk.nextNode()) {
+                const nd = walk.currentNode;
+                if (!nd.children.length && nd.textContent.trim()) {
+                    const name = nd.prefix ? nd.prefix + ':' + nd.localName : nd.localName;
+                    if (!fields[name]) fields[name] = nd.textContent.trim();
+                }
+            }
+            return fields;
+        } catch (e) { return {}; }
+    }
+
+    // ============================================================
+    // RENDERIZADO
+    // ============================================================
+    function render() { renderLista(); renderEditor(); renderToolbar(); }
+
+    function renderToolbar() {
+        const n = estado.archivos.length;
+        $('toolbar').style.display = n ? 'flex' : 'none';
+        $('dropZone').classList.toggle('has-files', n > 0);
+        if (n > 0) $('dropZone').querySelector('.drop-text').textContent = 'Arrastra más PDFs o carpetas';
+        const cm = estado.archivos.filter(a => a.tieneCambios).length;
+        $('counter').textContent = n + ' archivo' + (n !== 1 ? 's' : '') + (cm ? ' · ' + cm + ' con cambios' : '');
+        $('exportAllBtn').disabled = cm === 0;
+    }
+
+    function renderLista() {
+        const c = $('fileList');
+        const files = estado.archivos.filter(a =>
+            !estado.filtro || a.nombre.toLowerCase().includes(estado.filtro.toLowerCase())
+        );
+        if (!files.length) {
+            c.innerHTML = estado.archivos.length
+                ? '<div class="empty-state">No hay archivos que coincidan</div>'
+                : '';
+            return;
+        }
+        c.innerHTML = files.map(a => `
+            <div class="file-item ${a.id === estado.seleccionado ? 'selected' : ''} ${a.tieneCambios ? 'modified' : ''} ${a.estado === 'exportado' ? 'exported' : ''}"
+                 onclick="selArchivo('${a.id}')">
+                <span class="file-icon">📄</span>
+                <span class="file-name" title="${esc(a.nombre)}">${esc(a.nombre)}</span>
+                <span class="file-meta">${fmtTamano(a.tamano)} · ${a.paginas} pág</span>
+                ${a.tieneCambios ? '<span class="badge badge-warn">✏️</span>' : ''}
+                ${a.estado === 'exportado' ? '<span class="badge badge-ok">✅</span>' : ''}
+                <button class="btn-icon" onclick="event.stopPropagation(); elimArchivo('${a.id}')" title="Eliminar">✕</button>
+            </div>
+        `).join('');
+    }
+
+    function renderEditor() {
+        const c = $('editor');
+        const a = estado.archivos.find(x => x.id === estado.seleccionado);
+        if (!a) { c.style.display = 'none'; return; }
+        c.style.display = 'block';
+        const m = a.metadatos;
+
+        let h = `<div class="editor-header">
+            <h2>📋 ${esc(a.nombre)}</h2>
+            <div class="editor-actions">
+                <button class="btn btn-secondary" onclick="resetMeta('${a.id}')">↩️ Resetear</button>
+                <button class="btn btn-primary" onclick="exportarPDF('${a.id}')">📥 Descargar PDF modificado</button>
+            </div>
+        </div>`;
+
+        // Estándar
+        h += '<h3>Metadatos Estándar</h3><div class="fields-grid">';
+        for (const f of CAMPOS_ESTANDAR) {
+            const v = m.estandar[f.key] || '';
+            const ro = !f.editable;
+            h += `<div class="field-row">
+                <label class="field-label">${f.label}</label>
+                <input class="field-input${ro ? ' readonly' : ''}" type="text" value="${esc(v)}"
+                    ${ro ? 'readonly tabindex="-1"' : ''}
+                    data-fid="${a.id}" data-key="${f.key}" data-type="standard"
+                    oninput="updCampo(this)">
+                ${ro ? '<span class="field-hint">Solo lectura</span>' : ''}
+            </div>`;
+        }
+        h += '</div>';
+
+        // Personalizados
+        const ck = Object.keys(m.personalizados);
+        if (ck.length) {
+            h += '<h3>Campos Personalizados</h3><div class="fields-grid">';
+            for (const k of ck) {
+                h += `<div class="field-row">
+                    <label class="field-label">${esc(k)}</label>
+                    <input class="field-input" type="text" value="${esc(m.personalizados[k])}"
+                        data-fid="${a.id}" data-key="${k}" data-type="custom"
+                        oninput="updCampo(this)">
+                </div>`;
+            }
+            h += '</div>';
+        }
+
+        // XMP
+        const xk = Object.keys(m.xmp);
+        if (xk.length) {
+            h += '<h3>XMP Metadata (solo lectura)</h3><div class="fields-grid">';
+            for (const k of xk) {
+                h += `<div class="field-row">
+                    <label class="field-label">${esc(k)}</label>
+                    <input class="field-input readonly" type="text" value="${esc(m.xmp[k])}" readonly tabindex="-1">
+                </div>`;
+            }
+            h += '</div>';
+        }
+
+        // Page Labels
+        if (m.pageLabels.length) {
+            h += '<h3>Page Labels</h3><div class="page-labels">';
+            h += m.pageLabels.map(l => `Pág ${l.pagina}: <strong>${esc(l.etiqueta)}</strong>`).join(' → ');
+            h += '</div>';
+        }
+
+        c.innerHTML = h;
+    }
+
+    // ============================================================
+    // INTERACCIÓN
+    // ============================================================
+    function selArchivo(id) {
+        estado.seleccionado = estado.seleccionado === id ? null : id;
+        render();
+        if (estado.seleccionado) {
+            setTimeout(() => $('editor').scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
+        }
+    }
+
+    function elimArchivo(id) {
+        estado.archivos = estado.archivos.filter(a => a.id !== id);
+        if (estado.seleccionado === id) estado.seleccionado = null;
+        render();
+    }
+
+    function updCampo(input) {
+        const a = estado.archivos.find(x => x.id === input.dataset.fid);
+        if (!a) return;
+        const { key, type } = input.dataset;
+        if (type === 'standard') a.metadatos.estandar[key] = input.value;
+        else a.metadatos.personalizados[key] = input.value;
+
+        a.tieneCambios = JSON.stringify(a.metadatos.estandar) !== JSON.stringify(a.originales.estandar)
+                      || JSON.stringify(a.metadatos.personalizados) !== JSON.stringify(a.originales.personalizados);
+        renderLista(); renderToolbar();
+    }
+
+    function resetMeta(id) {
+        const a = estado.archivos.find(x => x.id === id);
+        if (!a) return;
+        a.metadatos.estandar = { ...a.originales.estandar };
+        a.metadatos.personalizados = { ...a.originales.personalizados };
+        a.tieneCambios = false;
+        render();
+        toast('Metadatos reseteados', 'info');
+    }
+
+    // ============================================================
+    // EXPORTACIÓN
+    // ============================================================
+    async function aplicarMetadatos(a) {
+        const pdfDoc = await PDFLib.PDFDocument.load(a.bytesOrig);
+        const m = a.metadatos.estandar;
+        if (m.title)       pdfDoc.setTitle(m.title);
+        if (m.author)      pdfDoc.setAuthor(m.author);
+        if (m.subject)     pdfDoc.setSubject(m.subject);
+        if (m.keywords)    pdfDoc.setKeywords(m.keywords);
+        if (m.creationDate) try { pdfDoc.setCreationDate(new Date(m.creationDate)); } catch(e) {}
+        if (m.modDate)      try { pdfDoc.setModificationDate(new Date(m.modDate)); } catch(e) {}
+
+        // Campos personalizados en Info dict
+        try {
+            const ref = pdfDoc.context.trailerInfo.Info;
+            if (ref) {
+                const info = pdfDoc.context.lookup(ref);
+                if (info) {
+                    for (const [k, v] of Object.entries(a.metadatos.personalizados)) {
+                        info.set(PDFLib.PDFName.of(k), PDFLib.PDFString.of(v));
+                    }
+                }
+            }
+        } catch (e) { /* campos custom no aplicables */ }
+
+        return await pdfDoc.save({ useObjectStreams: true });
+    }
+
+    async function exportarPDF(id) {
+        const a = estado.archivos.find(x => x.id === id);
+        if (!a) return;
+        try {
+            a.estado = 'exportando'; renderLista();
+            const bytes = await aplicarMetadatos(a);
+            dlBlob(new Blob([bytes], { type: 'application/pdf' }), a.nombre);
+            a.estado = 'exportado';
+            toast(a.nombre + ' exportado ✓', 'success');
+        } catch (e) {
+            a.estado = 'error';
+            toast('Error: ' + e.message, 'error');
+        }
+        render();
+    }
+
+    async function exportarTodo() {
+        const conCambios = estado.archivos.filter(a => a.tieneCambios);
+        if (!conCambios.length) { toast('No hay cambios para exportar', 'warning'); return; }
+
+        toast('Generando ZIP con ' + conCambios.length + ' PDFs...', 'info');
+        const zip = new JSZip();
+        let ok = 0, fail = 0;
+
+        for (const a of conCambios) {
+            try {
+                const bytes = await aplicarMetadatos(a);
+                zip.file(a.nombre, bytes);
+                a.estado = 'exportado';
+                ok++;
+            } catch (e) {
+                toast('Error con ' + a.nombre + ': ' + e.message, 'error');
+                fail++;
+            }
+        }
+
+        if (ok) {
+            const blob = await zip.generateAsync({ type: 'blob' });
+            dlBlob(blob, 'PDFs_modificados.zip');
+        }
+        toast(ok + ' PDFs exportados' + (fail ? ', ' + fail + ' errores' : ''), ok ? 'success' : 'error');
+        render();
+    }
+
+    function dlBlob(blob, name) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = name;
+        document.body.appendChild(a); a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }
+
+    // ============================================================
+    // DRAG & DROP + FILE INPUT
+    // ============================================================
+    function initDragDrop() {
+        const dz = $('dropZone'), fi = $('fileInput');
+        dz.addEventListener('click', () => fi.click());
+        dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+        dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+        dz.addEventListener('drop', async e => {
+            e.preventDefault(); dz.classList.remove('dragover');
+            const files = [];
+            for (const item of e.dataTransfer.items) {
+                const entry = item.webkitGetAsEntry ? item.webkitGetAsEntry() : null;
+                if (entry) await traverseEntry(entry, files);
+                else if (item.kind === 'file') { const f = item.getAsFile(); if (f) files.push(f); }
+            }
+            handleFiles(files);
+        });
+        fi.addEventListener('change', e => { handleFiles(Array.from(e.target.files)); fi.value = ''; });
+    }
+
+    async function traverseEntry(entry, out) {
+        if (entry.isFile) {
+            const f = await new Promise(r => entry.file(r));
+            out.push(f);
+        } else if (entry.isDirectory) {
+            const reader = entry.createReader();
+            const entries = await new Promise(r => reader.readEntries(r));
+            for (const e of entries) await traverseEntry(e, out);
+        }
+    }
+
+    async function handleFiles(files) {
+        const pdfs = files.filter(f => f.name.toLowerCase().endsWith('.pdf'));
+        const skip = files.length - pdfs.length;
+        if (skip) toast(skip + ' archivo' + (skip > 1 ? 's' : '') + ' no-PDF ignorado' + (skip > 1 ? 's' : ''), 'warning');
+        if (!pdfs.length) { toast('No se encontraron PDFs', 'error'); return; }
+
+        $('loadingBar').classList.add('active');
+        toast('Procesando ' + pdfs.length + ' PDF...', 'info');
+        let ok = 0, err = 0;
+
+        for (const f of pdfs) {
+            try {
+                if (!estado.archivos.find(a => a.nombre === f.name)) {
+                    estado.archivos.push(await parsearPDF(f));
+                    ok++;
+                }
+            } catch (e) {
+                toast(f.name + ': ' + e.message, 'error');
+                err++;
+            }
+        }
+
+        $('loadingBar').classList.remove('active');
+        render();
+        toast(ok + ' PDF cargados' + (err ? ', ' + err + ' errores' : ''), ok ? 'success' : 'error');
+    }
+
+    // ============================================================
+    // TOAST
+    // ============================================================
+    function toast(msg, type) {
+        document.querySelectorAll('.toast').forEach(t => t.remove());
+        const el = document.createElement('div');
+        el.className = 'toast toast-' + (type || 'info');
+        el.textContent = msg;
+        document.body.appendChild(el);
+        requestAnimationFrame(() => el.classList.add('show'));
+        setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); }, 2500);
+    }
+
+    // ============================================================
+    // INIT
+    // ============================================================
+    document.addEventListener('DOMContentLoaded', () => {
+        initDragDrop();
+        $('searchInput').addEventListener('input', e => { estado.filtro = e.target.value; renderLista(); });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape' && estado.seleccionado) { estado.seleccionado = null; render(); } });
+    });
+    </script>
+</body>
+</html>
