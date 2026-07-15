@@ -1,4 +1,4 @@
-# 📄 VisorMetadatosPDF
+# 📄 METAPDFeditor
 
 **Herramienta zero-install** para visualizar, editar y sobreescribir metadatos de PDFs desde el navegador.
 
