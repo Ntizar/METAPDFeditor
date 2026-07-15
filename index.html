@@ -1,775 +1,1033 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VisorMetadatosPDF</title>
-    <style>
-        /* ===== RESET & BASE ===== */
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        :root {
-            --primary: #2563eb; --primary-hover: #1d4ed8; --primary-light: #eff6ff;
-            --accent: #f97316; --accent-light: #fff7ed;
-            --success: #10b981; --success-light: #ecfdf5;
-            --warning: #f59e0b; --warning-light: #fffbeb;
-            --danger: #ef4444; --danger-light: #fef2f2;
-            --bg: #f8fafc; --surface: #ffffff;
-            --text: #1e293b; --text-sec: #64748b; --text-muted: #94a3b8;
-            --border: #e2e8f0; --input-bg: #f1f5f9;
-            --radius: 8px; --radius-sm: 6px;
-            --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
-            --shadow-lg: 0 4px 12px rgba(0,0,0,.1);
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-            background: var(--bg); color: var(--text); line-height: 1.5;
-            min-height: 100vh; padding: 0;
-        }
-        .app { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VisorMetadatosPDF</title>
 
-        /* ===== HEADER ===== */
-        .header { text-align: center; margin-bottom: 24px; }
-        .header h1 { font-size: 1.6rem; font-weight: 700; color: var(--text); }
-        .subtitle { color: var(--text-sec); font-size: .9rem; margin-top: 4px; }
+  <style>
+    *,*::before,*::after{box-sizing:border-box}
+    :root{
+      --primary:#2563eb;--primary-hover:#1d4ed8;--primary-light:#eff6ff;
+      --success:#10b981;--danger:#ef4444;--warning:#f59e0b;
+      --bg:#f8fafc;--surface:#fff;--text:#1e293b;--text-sec:#64748b;
+      --text-muted:#94a3b8;--border:#e2e8f0;--input-bg:#f1f5f9;
+      --radius:8px;--shadow:0 1px 3px rgba(0,0,0,.08)
+    }
+    body{
+      margin:0;background:var(--bg);color:var(--text);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+      line-height:1.5
+    }
+    .app{max-width:960px;margin:auto;padding:24px 16px 60px}
+    .header{text-align:center;margin-bottom:24px}
+    .header h1{margin:0;font-size:1.65rem}
+    .subtitle{margin:5px 0 0;color:var(--text-sec);font-size:.9rem}
 
-        /* ===== DROP ZONE ===== */
-        .drop-zone {
-            border: 2px dashed var(--border); border-radius: var(--radius);
-            background: var(--surface); padding: 48px 24px; text-align: center;
-            cursor: pointer; transition: all .2s ease; position: relative;
-        }
-        .drop-zone:hover, .drop-zone.dragover {
-            border-color: var(--primary); background: var(--primary-light);
-        }
-        .drop-zone.dragover { transform: scale(1.01); box-shadow: var(--shadow-lg); }
-        .drop-zone.has-files { padding: 20px 24px; }
-        .drop-icon { font-size: 2.5rem; margin-bottom: 8px; }
-        .drop-text { font-size: 1rem; color: var(--text); font-weight: 500; }
-        .drop-hint { font-size: .8rem; color: var(--text-muted); margin-top: 4px; }
+    .drop-zone{
+      padding:46px 20px;text-align:center;cursor:pointer;
+      background:var(--surface);border:2px dashed var(--border);
+      border-radius:var(--radius);transition:.2s
+    }
+    .drop-zone:hover,.drop-zone.dragover{
+      border-color:var(--primary);background:var(--primary-light)
+    }
+    .drop-zone.has-files{padding:18px}
+    .drop-icon{font-size:2.4rem}
+    .drop-text{margin:8px 0 0;font-weight:600}
+    .drop-hint{margin:3px 0 0;color:var(--text-muted);font-size:.82rem}
 
-        /* ===== TOOLBAR ===== */
-        .toolbar {
-            display: none; align-items: center; justify-content: space-between;
-            gap: 12px; margin-top: 16px; flex-wrap: wrap;
-        }
-        .toolbar-left { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 200px; }
-        .toolbar-right { display: flex; align-items: center; gap: 12px; }
-        .search-input {
-            width: 100%; max-width: 280px; padding: 8px 12px; border: 1px solid var(--border);
-            border-radius: var(--radius-sm); font-size: .85rem; background: var(--surface);
-            color: var(--text); outline: none; transition: border-color .2s;
-        }
-        .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
-        .counter { font-size: .8rem; color: var(--text-sec); white-space: nowrap; }
+    .toolbar{
+      display:none;align-items:center;justify-content:space-between;
+      gap:12px;margin:16px 0;flex-wrap:wrap
+    }
+    .toolbar-left{flex:1;min-width:210px}
+    .toolbar-right{display:flex;align-items:center;gap:10px}
+    .search-input,.field-input,.field-name-input{
+      width:100%;padding:8px 10px;border:1px solid var(--border);
+      border-radius:6px;font:inherit;font-size:.84rem;outline:none
+    }
+    .search-input:focus,.field-input:focus,.field-name-input:focus{
+      border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.12)
+    }
+    .counter{font-size:.82rem;color:var(--text-sec);white-space:nowrap}
 
-        /* ===== FILE LIST ===== */
-        .file-list { margin-top: 12px; }
-        .file-item {
-            display: flex; align-items: center; gap: 10px;
-            padding: 10px 14px; background: var(--surface); border: 1px solid var(--border);
-            border-radius: var(--radius-sm); margin-bottom: 6px; cursor: pointer;
-            transition: all .15s ease; position: relative;
-        }
-        .file-item:hover { border-color: #cbd5e1; background: #fafbfc; }
-        .file-item.selected { border-color: var(--primary); background: var(--primary-light); }
-        .file-item.modified { border-left: 3px solid var(--accent); }
-        .file-item.exported { border-left: 3px solid var(--success); }
-        .file-icon { font-size: 1.1rem; flex-shrink: 0; }
-        .file-name {
-            font-size: .85rem; font-weight: 500; color: var(--text);
-            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0;
-        }
-        .file-meta { font-size: .75rem; color: var(--text-muted); white-space: nowrap; flex-shrink: 0; }
-        .badge {
-            font-size: .65rem; padding: 2px 6px; border-radius: 10px;
-            font-weight: 600; white-space: nowrap; flex-shrink: 0;
-        }
-        .badge-warn { background: var(--accent-light); color: var(--accent); }
-        .badge-ok { background: var(--success-light); color: var(--success); }
-        .btn-icon {
-            width: 28px; height: 28px; border: none; background: none;
-            color: var(--text-muted); cursor: pointer; border-radius: 4px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: .8rem; transition: all .15s; flex-shrink: 0;
-        }
-        .btn-icon:hover { background: var(--danger-light); color: var(--danger); }
+    .file-list{margin-top:10px}
+    .file-item{
+      display:flex;align-items:center;gap:10px;padding:10px 13px;
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:6px;margin-bottom:6px;cursor:pointer
+    }
+    .file-item:hover{border-color:#cbd5e1}
+    .file-item.selected{background:var(--primary-light);border-color:var(--primary)}
+    .file-item.modified{border-left:4px solid var(--warning)}
+    .file-item.exported{border-left:4px solid var(--success)}
+    .file-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;font-size:.86rem;font-weight:600}
+    .file-meta{font-size:.76rem;color:var(--text-muted);white-space:nowrap}
+    .badge{font-size:.7rem;color:var(--warning)}
+    .btn-icon,.btn-del{
+      border:0;background:none;color:var(--text-muted);cursor:pointer;
+      width:30px;height:30px;border-radius:5px;font-size:1rem
+    }
+    .btn-icon:hover,.btn-del:hover{background:#fef2f2;color:var(--danger)}
 
-        /* ===== EDITOR ===== */
-        .editor {
-            display: none; margin-top: 16px; background: var(--surface);
-            border: 1px solid var(--border); border-radius: var(--radius);
-            padding: 20px 24px; box-shadow: var(--shadow);
-        }
-        .editor-header {
-            display: flex; align-items: center; justify-content: space-between;
-            gap: 12px; margin-bottom: 16px; flex-wrap: wrap;
-        }
-        .editor-header h2 { font-size: 1.05rem; font-weight: 600; }
-        .editor-actions { display: flex; gap: 8px; }
-        .editor h3 {
-            font-size: .8rem; font-weight: 600; color: var(--text-sec);
-            text-transform: uppercase; letter-spacing: .04em;
-            margin: 16px 0 8px; padding-bottom: 4px;
-            border-bottom: 1px solid var(--border);
-        }
-        .fields-grid { display: flex; flex-direction: column; gap: 6px; }
-        .field-row { display: flex; align-items: center; gap: 10px; }
-        .field-label {
-            font-size: .8rem; font-weight: 500; color: var(--text-sec);
-            width: 140px; flex-shrink: 0; text-align: right; padding-right: 4px;
-        }
-        .field-input {
-            flex: 1; padding: 6px 10px; border: 1px solid var(--border);
-            border-radius: var(--radius-sm); font-size: .82rem; font-family: inherit;
-            background: var(--input-bg); color: var(--text); outline: none;
-            transition: border-color .2s, box-shadow .2s; min-width: 0;
-        }
-        .field-input:focus {
-            border-color: var(--primary); background: var(--surface);
-            box-shadow: 0 0 0 3px rgba(37,99,235,.1);
-        }
-        .field-input.readonly {
-            background: #f8fafc; color: var(--text-muted); cursor: default;
-            border-style: dashed;
-        }
-        .field-hint { font-size: .7rem; color: var(--text-muted); white-space: nowrap; }
-        .custom-field-row { gap: 6px !important; align-items: center !important; }
-        .field-name-input {
-            width: 180px; flex-shrink: 0; padding: 6px 10px; border: 1px solid var(--border);
-            border-radius: var(--radius-sm); font-size: .82rem; font-family: inherit;
-            background: #fff; color: var(--primary); font-weight: 600; outline: none;
-            transition: border-color .2s;
-        }
-        .field-name-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
-        .field-name-input::placeholder { color: var(--text-muted); font-weight: 400; }
-        .btn-del {
-            width: 28px; height: 28px; border: 1px solid transparent; background: none;
-            color: var(--text-muted); cursor: pointer; border-radius: 4px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: .8rem; transition: all .15s; flex-shrink: 0;
-        }
-        .btn-del:hover { background: var(--danger-light); color: var(--danger); border-color: var(--danger); }
-        .custom-add-row { margin-top: 8px; }
-        .btn-sm { padding: 6px 14px; font-size: .78rem; }
-        .page-labels {
-            font-size: .82rem; color: var(--text); padding: 8px 12px;
-            background: var(--input-bg); border-radius: var(--radius-sm);
-            border: 1px solid var(--border);
-        }
-        .page-labels strong { color: var(--primary); }
+    .editor{
+      display:none;margin-top:16px;padding:20px 24px;background:var(--surface);
+      border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)
+    }
+    .editor-header{
+      display:flex;align-items:center;justify-content:space-between;
+      gap:10px;flex-wrap:wrap;margin-bottom:14px
+    }
+    .editor-header h2{margin:0;font-size:1.05rem;overflow-wrap:anywhere}
+    .editor-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .editor h3{
+      margin:20px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--border);
+      color:var(--text-sec);font-size:.8rem;text-transform:uppercase;letter-spacing:.04em
+    }
+    .fields-grid{display:flex;flex-direction:column;gap:7px}
+    .field-row{display:flex;align-items:center;gap:9px}
+    .field-label{width:150px;text-align:right;color:var(--text-sec);font-size:.82rem}
+    .field-input{flex:1;min-width:0;background:var(--input-bg)}
+    .field-input.readonly{background:#f8fafc;color:var(--text-muted);border-style:dashed}
+    .field-name-input{width:185px;flex:none;color:var(--primary);font-weight:600}
+    .field-hint{font-size:.7rem;color:var(--text-muted);white-space:nowrap}
+    .custom-add-row{margin-top:4px}
+    .page-labels{
+      padding:9px 12px;background:var(--input-bg);border:1px solid var(--border);
+      border-radius:6px;font-size:.82rem
+    }
+    .empty-state{text-align:center;padding:28px;color:var(--text-muted)}
 
-        /* ===== BUTTONS ===== */
-        .btn {
-            padding: 8px 16px; border: 1px solid var(--border); border-radius: var(--radius-sm);
-            font-size: .82rem; font-weight: 500; cursor: pointer; transition: all .15s;
-            display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
-            font-family: inherit;
-        }
-        .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
-        .btn-primary:hover { background: var(--primary-hover); }
-        .btn-secondary { background: var(--surface); color: var(--text); }
-        .btn-secondary:hover { background: var(--bg); }
-        .btn-danger { background: var(--surface); color: var(--danger); border-color: var(--danger); }
-        .btn-danger:hover { background: var(--danger-light); }
-        .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn{
+      display:inline-flex;align-items:center;justify-content:center;gap:6px;
+      padding:8px 14px;border-radius:6px;border:1px solid var(--border);
+      background:var(--surface);color:var(--text);font:inherit;font-size:.82rem;
+      font-weight:600;cursor:pointer
+    }
+    .btn:hover{background:#f1f5f9}
+    .btn-primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+    .btn-primary:hover{background:var(--primary-hover)}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .btn-sm{padding:6px 11px;font-size:.77rem}
 
-        /* ===== EMPTY STATE ===== */
-        .empty-state {
-            text-align: center; padding: 32px; color: var(--text-muted);
-            font-size: .85rem;
-        }
+    .loading-bar{display:none;height:3px;overflow:hidden;margin-top:9px;background:var(--border)}
+    .loading-bar.active{display:block}
+    .loading-bar::after{
+      content:"";display:block;width:30%;height:100%;background:var(--primary);
+      animation:loading 1s infinite ease-in-out
+    }
+    @keyframes loading{from{transform:translateX(-100%)}to{transform:translateX(400%)}}
 
-        /* ===== FOOTER ===== */
-        .footer {
-            text-align: center; margin-top: 40px; padding-top: 16px;
-            border-top: 1px solid var(--border); font-size: .75rem; color: var(--text-muted);
-        }
-        .footer a { color: var(--primary); text-decoration: none; }
+    .toast{
+      position:fixed;z-index:9999;bottom:25px;left:50%;
+      transform:translate(-50%,20px);opacity:0;transition:.25s;
+      max-width:90vw;padding:10px 18px;border-radius:8px;color:#fff;
+      font-size:.83rem;font-weight:600;box-shadow:0 4px 14px rgba(0,0,0,.18)
+    }
+    .toast.show{opacity:1;transform:translate(-50%,0)}
+    .toast-info{background:var(--primary)}
+    .toast-success{background:var(--success)}
+    .toast-warning{background:var(--warning)}
+    .toast-error{background:var(--danger)}
 
-        /* ===== TOAST ===== */
-        .toast {
-            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
-            padding: 10px 20px; border-radius: var(--radius); font-size: .82rem;
-            font-weight: 500; z-index: 9999; opacity: 0; transition: all .3s ease;
-            box-shadow: var(--shadow-lg); max-width: 90vw; text-align: center;
-        }
-        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-        .toast-info { background: var(--primary); color: #fff; }
-        .toast-success { background: var(--success); color: #fff; }
-        .toast-warning { background: var(--warning); color: #fff; }
-        .toast-error { background: var(--danger); color: #fff; }
+    .footer{
+      margin-top:42px;padding-top:15px;border-top:1px solid var(--border);
+      text-align:center;color:var(--text-muted);font-size:.75rem
+    }
 
-        /* ===== LOADING ===== */
-        .loading-bar {
-            height: 3px; background: var(--border); border-radius: 2px;
-            overflow: hidden; margin-top: 8px; display: none;
-        }
-        .loading-bar.active { display: block; }
-        .loading-bar::after {
-            content: ''; display: block; height: 100%; width: 30%;
-            background: var(--primary); border-radius: 2px;
-            animation: loading-slide 1s ease-in-out infinite;
-        }
-        @keyframes loading-slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }
-
-        /* ===== RESPONSIVE ===== */
-        @media (max-width: 640px) {
-            .app { padding: 16px 12px 60px; }
-            .drop-zone { padding: 32px 16px; }
-            .field-row { flex-direction: column; align-items: stretch; gap: 2px; }
-            .field-label { width: auto; text-align: left; padding: 0; }
-            .field-name-input { width: 100%; }
-            .editor-header { flex-direction: column; align-items: stretch; }
-            .editor-actions { justify-content: stretch; }
-            .editor-actions .btn { flex: 1; justify-content: center; }
-            .file-meta { display: none; }
-            .toolbar { flex-direction: column; align-items: stretch; }
-            .toolbar-right { justify-content: space-between; }
-        }
-    </style>
+    @media(max-width:640px){
+      .app{padding:16px 12px 50px}
+      .toolbar{align-items:stretch;flex-direction:column}
+      .toolbar-right{justify-content:space-between}
+      .editor{padding:16px}
+      .field-row{align-items:stretch;flex-direction:column;gap:3px}
+      .field-label{width:auto;text-align:left}
+      .field-name-input{width:100%}
+      .file-meta{display:none}
+      .editor-actions{width:100%}
+      .editor-actions .btn{flex:1}
+    }
+  </style>
 </head>
+
 <body>
-    <div class="app">
-        <header class="header">
-            <h1>📄 VisorMetadatosPDF</h1>
-            <p class="subtitle">Visualiza, edita y sobrescribe metadatos de PDFs — 100% en tu navegador</p>
-        </header>
+  <div class="app">
+    <header class="header">
+      <h1>📄 VisorMetadatosPDF</h1>
+      <p class="subtitle">Visualiza, edita y sobrescribe metadatos de PDFs en tu navegador</p>
+    </header>
 
-        <div id="dropZone" class="drop-zone">
-            <div class="drop-icon">📁</div>
-            <p class="drop-text">Arrastra PDFs o carpetas aquí</p>
-            <p class="drop-hint">o haz clic para seleccionar archivos</p>
-            <input type="file" id="fileInput" multiple accept=".pdf" hidden>
-        </div>
-
-        <div id="loadingBar" class="loading-bar"></div>
-
-        <div id="toolbar" class="toolbar">
-            <div class="toolbar-left">
-                <input type="text" id="searchInput" class="search-input" placeholder="🔍 Filtrar archivos...">
-            </div>
-            <div class="toolbar-right">
-                <span id="counter" class="counter"></span>
-                <button class="btn btn-primary" id="exportAllBtn" onclick="exportarTodo()">📥 Exportar todo (ZIP)</button>
-            </div>
-        </div>
-
-        <div id="fileList" class="file-list"></div>
-        <div id="editor" class="editor"></div>
-
-        <footer class="footer">
-            Hecho con ❤️ por <strong>David Antizar</strong> — pdf-lib · pdf.js · JSZip
-        </footer>
+    <div id="dropZone" class="drop-zone">
+      <div class="drop-icon">📁</div>
+      <p class="drop-text">Arrastra PDFs o carpetas aquí</p>
+      <p class="drop-hint">o haz clic para seleccionar archivos</p>
+      <input id="fileInput" type="file" multiple accept=".pdf,application/pdf" hidden>
     </div>
 
-    <!-- Librerías CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <div id="loadingBar" class="loading-bar"></div>
 
-    <script>
-    // ============================================================
-    // CONFIGURACIÓN
-    // ============================================================
+    <div id="toolbar" class="toolbar">
+      <div class="toolbar-left">
+        <input id="searchInput" class="search-input" type="text" placeholder="🔍 Filtrar archivos...">
+      </div>
+      <div class="toolbar-right">
+        <span id="counter" class="counter"></span>
+        <button id="exportAllBtn" class="btn btn-primary" onclick="exportarTodo()">
+          📥 Exportar todo (ZIP)
+        </button>
+      </div>
+    </div>
+
+    <div id="fileList" class="file-list"></div>
+    <div id="editor" class="editor"></div>
+
+    <footer class="footer">
+      Hecho con ❤️ por <strong>David Ntizar</strong> — pdf-lib · pdf.js · JSZip
+    </footer>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+  <script>
     const CAMPOS_ESTANDAR = [
-        { key: 'title',         label: 'Título',            pdfKey: 'Title',        editable: true },
-        { key: 'author',        label: 'Autor',             pdfKey: 'Author',       editable: true },
-        { key: 'subject',       label: 'Asunto',            pdfKey: 'Subject',      editable: true },
-        { key: 'keywords',      label: 'Palabras Clave',    pdfKey: 'Keywords',     editable: true },
-        { key: 'creator',       label: 'Creador',           pdfKey: 'Creator',      editable: false },
-        { key: 'producer',      label: 'Productor',         pdfKey: 'Producer',     editable: false },
-        { key: 'creationDate',  label: 'Fecha Creación',    pdfKey: 'CreationDate', editable: true },
-        { key: 'modDate',       label: 'Fecha Modificación',pdfKey: 'ModDate',      editable: true },
+      { key: "title",        label: "Título",             pdfKey: "Title",        editable: true },
+      { key: "author",       label: "Autor",              pdfKey: "Author",       editable: true },
+      { key: "subject",      label: "Asunto",             pdfKey: "Subject",      editable: true },
+      { key: "keywords",     label: "Palabras clave",     pdfKey: "Keywords",     editable: true },
+      { key: "creator",      label: "Creador",            pdfKey: "Creator",      editable: false },
+      { key: "producer",     label: "Productor",          pdfKey: "Producer",     editable: false },
+      { key: "creationDate", label: "Fecha de creación",  pdfKey: "CreationDate", editable: true },
+      { key: "modDate",      label: "Fecha modificación", pdfKey: "ModDate",      editable: true }
     ];
 
-    // ============================================================
-    // ESTADO
-    // ============================================================
-    const estado = { archivos: [], seleccionado: null, filtro: '' };
+    const estado = {
+      archivos: [],
+      seleccionado: null,
+      filtro: ""
+    };
 
-    // ============================================================
-    // UTILIDADES
-    // ============================================================
     const $ = id => document.getElementById(id);
-    const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-    const esc = s => s == null ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
-    function fmtTamano(b) {
-        if (b < 1024) return b + ' B';
-        if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
-        return (b / 1048576).toFixed(1) + ' MB';
-    }
-    function fmtFecha(d) {
-        if (!d || isNaN(d.getTime())) return '';
-        return d.toISOString().slice(0, 10);
+    const uid = () =>
+      Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
+
+    const esc = valor =>
+      String(valor ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+
+    function fmtTamano(bytes) {
+      if (bytes < 1024) return bytes + " B";
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+      return (bytes / (1024 * 1024)).toFixed(1) + " MB";
     }
 
-    // ============================================================
-    // PARSEO DE PDF
-    // ============================================================
+    function fmtFecha(fecha) {
+      if (!(fecha instanceof Date) || isNaN(fecha.getTime())) return "";
+      return fecha.toISOString().slice(0, 10);
+    }
+
+    function nombrePDF(objetoNombre) {
+      if (!objetoNombre) return "";
+      if (typeof objetoNombre.asString === "function") {
+        return objetoNombre.asString().replace(/^\//, "");
+      }
+      return String(objetoNombre).replace(/^\//, "");
+    }
+
+    function valorPDF(objeto) {
+      if (!objeto) return "";
+
+      if (typeof objeto.decodeText === "function") {
+        try {
+          return objeto.decodeText();
+        } catch (e) {}
+      }
+
+      if (typeof objeto.value === "string") return objeto.value;
+      if (objeto.value !== undefined) return String(objeto.value);
+
+      return String(objeto);
+    }
+
+    function getInfoDict(pdfDoc, crearSiNoExiste = false) {
+      const infoActual = pdfDoc.context.trailerInfo.Info;
+
+      if (infoActual instanceof PDFLib.PDFDict) return infoActual;
+
+      if (infoActual) {
+        try {
+          const info = pdfDoc.context.lookup(infoActual, PDFLib.PDFDict);
+          if (info) return info;
+        } catch (e) {}
+      }
+
+      if (!crearSiNoExiste) return null;
+
+      const dict = pdfDoc.context.obj({});
+      const ref = pdfDoc.context.register(dict);
+      pdfDoc.context.trailerInfo.Info = ref;
+
+      return dict;
+    }
+
+    function ponerTextoInfo(info, nombre, valor) {
+      const clave = PDFLib.PDFName.of(nombre);
+      const texto = String(valor ?? "").trim();
+
+      if (!texto) {
+        info.delete(clave);
+        return;
+      }
+
+      info.set(clave, PDFLib.PDFHexString.fromText(texto));
+    }
+
+    function calcularCambios(archivo) {
+      archivo.tieneCambios =
+        JSON.stringify(archivo.metadatos.estandar) !==
+        JSON.stringify(archivo.originales.estandar) ||
+        JSON.stringify(archivo.metadatos.personalizados) !==
+        JSON.stringify(archivo.originales.personalizados);
+    }
+
     async function parsearPDF(file) {
-        const buf = await file.arrayBuffer();
-        const bytes = new Uint8Array(buf);
+      const buffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
 
-        // --- pdf-lib: metadatos estándar + custom ---
-        const pdfDoc = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
-        const estandar = {};
-        estandar.title       = pdfDoc.getTitle()       || '';
-        estandar.author      = pdfDoc.getAuthor()      || '';
-        estandar.subject     = pdfDoc.getSubject()     || '';
-        estandar.keywords    = pdfDoc.getKeywords()    || '';
-        estandar.creator     = pdfDoc.getCreator()     || '';
-        estandar.producer    = pdfDoc.getProducer()    || '';
-        estandar.creationDate= fmtFecha(pdfDoc.getCreationDate());
-        estandar.modDate     = fmtFecha(pdfDoc.getModificationDate());
+      const pdfDoc = await PDFLib.PDFDocument.load(bytes, {
+        ignoreEncryption: true,
+        updateMetadata: false
+      });
 
-        // Campos personalizados (Info dict raw)
-        const personalizados = {};
-        try {
-            const infoRef = pdfDoc.context.trailerInfo.Info;
-            if (infoRef) {
-                const info = pdfDoc.context.lookup(infoRef);
-                if (info && typeof info.entries === 'function') {
-                    for (const [k, v] of info.entries()) {
-                        const name = k.value;
-                        if (!CAMPOS_ESTANDAR.find(c => '/' + c.pdfKey === name)) {
-                            personalizados[name] = pdfObjStr(v);
-                        }
-                    }
-                }
+      const estandar = {
+        title: pdfDoc.getTitle() || "",
+        author: pdfDoc.getAuthor() || "",
+        subject: pdfDoc.getSubject() || "",
+        keywords: pdfDoc.getKeywords() || "",
+        creator: pdfDoc.getCreator() || "",
+        producer: pdfDoc.getProducer() || "",
+        creationDate: fmtFecha(pdfDoc.getCreationDate()),
+        modDate: fmtFecha(pdfDoc.getModificationDate())
+      };
+
+      const personalizados = {};
+      const nombresEstandar = new Set(CAMPOS_ESTANDAR.map(c => c.pdfKey));
+
+      try {
+        const info = getInfoDict(pdfDoc, false);
+
+        if (info && typeof info.entries === "function") {
+          for (const [clave, valor] of info.entries()) {
+            const nombre = nombrePDF(clave);
+
+            if (!nombresEstandar.has(nombre)) {
+              personalizados[nombre] = valorPDF(valor);
             }
-        } catch (e) { /* PDF corrupto o inusual */ }
+          }
+        }
+      } catch (e) {
+        console.warn("No se pudieron leer campos personalizados", e);
+      }
 
-        // --- pdf.js: XMP + page labels + pageCount ---
-        pdfjsLib.GlobalWorkerOptions.workerSrc = '';
-        let xmpFields = {}, pageLabels = [], pageCount = 0;
-        try {
-            const jsDoc = await pdfjsLib.getDocument({ data: bytes.slice(0) }).promise;
-            pageCount = jsDoc.numPages;
-            const meta = await jsDoc.getMetadata();
-            if (meta.metadata && meta.metadata.xml) xmpFields = parseXMP(meta.metadata.xml);
-            const labels = await jsDoc.getPageLabels();
-            if (labels && labels.length) {
-                pageLabels = labels.map((l, i) => ({
-                    pagina: i + 1,
-                    etiqueta: typeof l === 'string' ? l : fmtLabel(l)
-                }));
-            }
-        } catch (e) { /* pdf.js fallback: sin XMP ni labels */ }
+      let xmp = {};
+      let pageLabels = [];
+      let paginas = 0;
 
-        return {
-            id: uid(), nombre: file.name, tamano: file.size, paginas: pageCount,
-            metadatos: { estandar, personalizados, xmp: xmpFields, pageLabels },
-            originales: { estandar: {...estandar}, personalizados: {...personalizados} },
-            bytesOrig: bytes, tieneCambios: false, estado: 'cargado'
-        };
-    }
+      try {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = "";
 
-    function pdfObjStr(obj) {
-        if (!obj) return '';
-        if (typeof obj.value === 'string') return obj.value;
-        if (obj.value != null) return String(obj.value);
-        return String(obj);
-    }
+        const jsDoc = await pdfjsLib.getDocument({
+          data: bytes.slice(0)
+        }).promise;
 
-    function fmtLabel(l) {
-        if (typeof l === 'string') return l;
-        const p = l.prefix || '', s = l.start || 1;
-        const style = l.style || l.type || 'numeric';
-        if (style === 'romanUpper') return p + toRoman(s).toUpperCase();
-        if (style === 'romanLower') return p + toRoman(s).toLowerCase();
-        return p + s;
-    }
-    function toRoman(n) {
-        const V = [1000,900,500,400,100,90,50,40,10,9,5,4,1];
-        const S = ['M','CM','D','CD','C','XC','L','XL','X','IX','V','IV','I'];
-        let r = '';
-        for (let i = 0; i < V.length; i++) while (n >= V[i]) { r += S[i]; n -= V[i]; }
-        return r;
+        paginas = jsDoc.numPages;
+
+        const meta = await jsDoc.getMetadata();
+
+        if (meta.metadata && meta.metadata.xml) {
+          xmp = parseXMP(meta.metadata.xml);
+        }
+
+        const labels = await jsDoc.getPageLabels();
+
+        if (labels && labels.length) {
+          pageLabels = labels.map((etiqueta, indice) => ({
+            pagina: indice + 1,
+            etiqueta: typeof etiqueta === "string" ? etiqueta : String(etiqueta)
+          }));
+        }
+
+        await jsDoc.destroy();
+      } catch (e) {
+        console.warn("No se pudo leer XMP con pdf.js", e);
+      }
+
+      return {
+        id: uid(),
+        nombre: file.name,
+        tamano: file.size,
+        paginas,
+        bytesOrig: bytes,
+        metadatos: {
+          estandar,
+          personalizados,
+          xmp,
+          pageLabels
+        },
+        originales: {
+          estandar: { ...estandar },
+          personalizados: { ...personalizados }
+        },
+        tieneCambios: false,
+        estado: "cargado"
+      };
     }
 
     function parseXMP(xml) {
-        if (!xml) return {};
-        try {
-            const doc = new DOMParser().parseFromString(xml, 'application/xml');
-            const fields = {};
-            const walk = doc.createTreeWalker(doc.documentElement, NodeFilter.SHOW_ELEMENT);
-            while (walk.nextNode()) {
-                const nd = walk.currentNode;
-                if (!nd.children.length && nd.textContent.trim()) {
-                    const name = nd.prefix ? nd.prefix + ':' + nd.localName : nd.localName;
-                    if (!fields[name]) fields[name] = nd.textContent.trim();
-                }
+      if (!xml) return {};
+
+      try {
+        const documento = new DOMParser().parseFromString(xml, "application/xml");
+        const resultado = {};
+
+        if (documento.querySelector("parsererror")) return resultado;
+
+        const walker = documento.createTreeWalker(
+          documento.documentElement,
+          NodeFilter.SHOW_ELEMENT
+        );
+
+        while (walker.nextNode()) {
+          const nodo = walker.currentNode;
+
+          if (!nodo.children.length && nodo.textContent.trim()) {
+            const clave = nodo.prefix
+              ? nodo.prefix + ":" + nodo.localName
+              : nodo.localName;
+
+            if (!resultado[clave]) {
+              resultado[clave] = nodo.textContent.trim();
             }
-            return fields;
-        } catch (e) { return {}; }
+          }
+        }
+
+        return resultado;
+      } catch (e) {
+        return {};
+      }
     }
 
-    // ============================================================
-    // RENDERIZADO
-    // ============================================================
-    function render() { renderLista(); renderEditor(); renderToolbar(); }
+    function render() {
+      renderToolbar();
+      renderLista();
+      renderEditor();
+    }
 
     function renderToolbar() {
-        const n = estado.archivos.length;
-        $('toolbar').style.display = n ? 'flex' : 'none';
-        $('dropZone').classList.toggle('has-files', n > 0);
-        if (n > 0) $('dropZone').querySelector('.drop-text').textContent = 'Arrastra más PDFs o carpetas';
-        const cm = estado.archivos.filter(a => a.tieneCambios).length;
-        $('counter').textContent = n + ' archivo' + (n !== 1 ? 's' : '') + (cm ? ' · ' + cm + ' con cambios' : '');
-        $('exportAllBtn').disabled = cm === 0;
+      const total = estado.archivos.length;
+      const modificados = estado.archivos.filter(a => a.tieneCambios).length;
+
+      $("toolbar").style.display = total ? "flex" : "none";
+      $("dropZone").classList.toggle("has-files", total > 0);
+
+      if (total) {
+        $("dropZone").querySelector(".drop-text").textContent =
+          "Arrastra más PDFs o carpetas aquí";
+      }
+
+      $("counter").textContent =
+        total + " archivo" + (total !== 1 ? "s" : "") +
+        (modificados ? " · " + modificados + " con cambios" : "");
+
+      $("exportAllBtn").disabled = modificados === 0;
     }
 
     function renderLista() {
-        const c = $('fileList');
-        const files = estado.archivos.filter(a =>
-            !estado.filtro || a.nombre.toLowerCase().includes(estado.filtro.toLowerCase())
-        );
-        if (!files.length) {
-            c.innerHTML = estado.archivos.length
-                ? '<div class="empty-state">No hay archivos que coincidan</div>'
-                : '';
-            return;
-        }
-        c.innerHTML = files.map(a => `
-            <div class="file-item ${a.id === estado.seleccionado ? 'selected' : ''} ${a.tieneCambios ? 'modified' : ''} ${a.estado === 'exportado' ? 'exported' : ''}"
-                 onclick="selArchivo('${a.id}')">
-                <span class="file-icon">📄</span>
-                <span class="file-name" title="${esc(a.nombre)}">${esc(a.nombre)}</span>
-                <span class="file-meta">${fmtTamano(a.tamano)} · ${a.paginas} pág</span>
-                ${a.tieneCambios ? '<span class="badge badge-warn">✏️</span>' : ''}
-                ${a.estado === 'exportado' ? '<span class="badge badge-ok">✅</span>' : ''}
-                <button class="btn-icon" onclick="event.stopPropagation(); elimArchivo('${a.id}')" title="Eliminar">✕</button>
-            </div>
-        `).join('');
+      const contenedor = $("fileList");
+
+      const archivos = estado.archivos.filter(archivo =>
+        !estado.filtro ||
+        archivo.nombre.toLowerCase().includes(estado.filtro.toLowerCase())
+      );
+
+      if (!archivos.length) {
+        contenedor.innerHTML = estado.archivos.length
+          ? '<div class="empty-state">No hay archivos que coincidan con el filtro.</div>'
+          : "";
+        return;
+      }
+
+      contenedor.innerHTML = archivos.map(archivo => `
+        <div class="file-item
+          ${archivo.id === estado.seleccionado ? "selected" : ""}
+          ${archivo.tieneCambios ? "modified" : ""}
+          ${archivo.estado === "exportado" ? "exported" : ""}"
+          onclick="selArchivo('${archivo.id}')">
+
+          <span>📄</span>
+          <span class="file-name" title="${esc(archivo.nombre)}">
+            ${esc(archivo.nombre)}
+          </span>
+          <span class="file-meta">
+            ${fmtTamano(archivo.tamano)} · ${archivo.paginas} pág.
+          </span>
+          ${archivo.tieneCambios ? '<span class="badge">✏️ Modificado</span>' : ""}
+          ${archivo.estado === "exportado" ? '<span class="badge">✅</span>' : ""}
+          <button class="btn-icon"
+            title="Eliminar archivo"
+            onclick="event.stopPropagation(); elimArchivo('${archivo.id}')">✕</button>
+        </div>
+      `).join("");
     }
 
     function renderEditor() {
-        const c = $('editor');
-        const a = estado.archivos.find(x => x.id === estado.seleccionado);
-        if (!a) { c.style.display = 'none'; return; }
-        c.style.display = 'block';
-        const m = a.metadatos;
+      const contenedor = $("editor");
+      const archivo = estado.archivos.find(a => a.id === estado.seleccionado);
 
-        let h = `<div class="editor-header">
-            <h2>📋 ${esc(a.nombre)}</h2>
-            <div class="editor-actions">
-                <button class="btn btn-secondary" onclick="resetMeta('${a.id}')">↩️ Resetear</button>
-                <button class="btn btn-primary" onclick="exportarPDF('${a.id}')">📥 Descargar PDF modificado</button>
+      if (!archivo) {
+        contenedor.style.display = "none";
+        contenedor.innerHTML = "";
+        return;
+      }
+
+      contenedor.style.display = "block";
+
+      const { estandar, personalizados, xmp, pageLabels } = archivo.metadatos;
+
+      let html = `
+        <div class="editor-header">
+          <h2>📋 ${esc(archivo.nombre)}</h2>
+          <div class="editor-actions">
+            <button class="btn" onclick="resetMeta('${archivo.id}')">↩️ Resetear</button>
+            <button class="btn btn-primary" onclick="exportarPDF('${archivo.id}')">
+              📥 Descargar PDF modificado
+            </button>
+          </div>
+        </div>
+
+        <h3>Metadatos estándar</h3>
+        <div class="fields-grid">
+      `;
+
+      for (const campo of CAMPOS_ESTANDAR) {
+        const valor = estandar[campo.key] || "";
+        const soloLectura = !campo.editable;
+
+        html += `
+          <div class="field-row">
+            <label class="field-label">${campo.label}</label>
+            <input
+              class="field-input ${soloLectura ? "readonly" : ""}"
+              type="text"
+              value="${esc(valor)}"
+              ${soloLectura ? "readonly tabindex=-1" : ""}
+              data-fid="${archivo.id}"
+              data-key="${campo.key}"
+              data-type="standard"
+              oninput="updCampo(this)">
+            ${soloLectura ? '<span class="field-hint">Solo lectura</span>' : ""}
+          </div>
+        `;
+      }
+
+      html += `
+        </div>
+        <h3>Campos personalizados</h3>
+        <div class="fields-grid">
+      `;
+
+      for (const [clave, valor] of Object.entries(personalizados)) {
+        html += `
+          <div class="field-row">
+            <input
+              class="field-name-input"
+              type="text"
+              value="${esc(clave)}"
+              placeholder="nombre_campo"
+              data-fid="${archivo.id}"
+              data-oldkey="${esc(clave)}"
+              onblur="updCampoNombre(this)">
+
+            <input
+              class="field-input"
+              type="text"
+              value="${esc(valor)}"
+              data-fid="${archivo.id}"
+              data-key="${esc(clave)}"
+              data-type="custom"
+              oninput="updCampo(this)">
+
+            <button
+              class="btn-del"
+              title="Eliminar campo"
+              onclick="removeCampoCustom('${archivo.id}', this.parentElement.querySelector('.field-name-input').dataset.oldkey)">
+              ✕
+            </button>
+          </div>
+        `;
+      }
+
+      html += `
+          <div class="field-row custom-add-row">
+            <button class="btn btn-sm" onclick="addCampoCustom('${archivo.id}')">
+              + Añadir campo personalizado
+            </button>
+          </div>
+        </div>
+      `;
+
+      const clavesXmp = Object.keys(xmp);
+
+      if (clavesXmp.length) {
+        html += `
+          <h3>XMP detectado (solo lectura)</h3>
+          <div class="fields-grid">
+        `;
+
+        for (const clave of clavesXmp) {
+          html += `
+            <div class="field-row">
+              <label class="field-label">${esc(clave)}</label>
+              <input class="field-input readonly" type="text"
+                readonly tabindex="-1" value="${esc(xmp[clave])}">
             </div>
-        </div>`;
-
-        // Estándar
-        h += '<h3>Metadatos Estándar</h3><div class="fields-grid">';
-        for (const f of CAMPOS_ESTANDAR) {
-            const v = m.estandar[f.key] || '';
-            const ro = !f.editable;
-            h += `<div class="field-row">
-                <label class="field-label">${f.label}</label>
-                <input class="field-input${ro ? ' readonly' : ''}" type="text" value="${esc(v)}"
-                    ${ro ? 'readonly tabindex="-1"' : ''}
-                    data-fid="${a.id}" data-key="${f.key}" data-type="standard"
-                    oninput="updCampo(this)">
-                ${ro ? '<span class="field-hint">Solo lectura</span>' : ''}
-            </div>`;
-        }
-        h += '</div>';
-
-        // Personalizados — SIEMPRE visible, con nombre editable + botón borrar
-        h += '<h3>Campos Personalizados</h3><div class="fields-grid">';
-        const ck = Object.keys(m.personalizados);
-        for (const k of ck) {
-            h += `<div class="field-row custom-field-row">
-                <input class="field-name-input" type="text" value="${esc(k)}" placeholder="nombre_campo"
-                    data-fid="${a.id}" data-oldkey="${k}"
-                    oninput="updCampoNombre(this)" onblur="updCampoNombre(this)">
-                <input class="field-input" type="text" value="${esc(m.personalizados[k])}"
-                    data-fid="${a.id}" data-key="${k}" data-type="custom"
-                    oninput="updCampo(this)">
-                <button class="btn-del" onclick="removeCampoCustom('${a.id}', this.parentElement.querySelector('.field-name-input').dataset.oldkey)" title="Eliminar campo">✕</button>
-            </div>`;
-        }
-        h += `<div class="field-row custom-add-row">
-            <button class="btn btn-secondary btn-sm" onclick="addCampoCustom('${a.id}')">+ Añadir campo personalizado</button>
-        </div>`;
-        h += '</div>';
-
-        // XMP
-        const xk = Object.keys(m.xmp);
-        if (xk.length) {
-            h += '<h3>XMP Metadata (solo lectura)</h3><div class="fields-grid">';
-            for (const k of xk) {
-                h += `<div class="field-row">
-                    <label class="field-label">${esc(k)}</label>
-                    <input class="field-input readonly" type="text" value="${esc(m.xmp[k])}" readonly tabindex="-1">
-                </div>`;
-            }
-            h += '</div>';
+          `;
         }
 
-        // Page Labels
-        if (m.pageLabels.length) {
-            h += '<h3>Page Labels</h3><div class="page-labels">';
-            h += m.pageLabels.map(l => `Pág ${l.pagina}: <strong>${esc(l.etiqueta)}</strong>`).join(' → ');
-            h += '</div>';
-        }
+        html += "</div>";
+      }
 
-        c.innerHTML = h;
+      if (pageLabels.length) {
+        html += `
+          <h3>Etiquetas de página</h3>
+          <div class="page-labels">
+            ${pageLabels.map(p => `Pág. ${p.pagina}: <strong>${esc(p.etiqueta)}</strong>`).join(" · ")}
+          </div>
+        `;
+      }
+
+      contenedor.innerHTML = html;
     }
 
-    // ============================================================
-    // INTERACCIÓN
-    // ============================================================
     function selArchivo(id) {
-        estado.seleccionado = estado.seleccionado === id ? null : id;
-        render();
-        if (estado.seleccionado) {
-            setTimeout(() => $('editor').scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
-        }
+      estado.seleccionado = estado.seleccionado === id ? null : id;
+      render();
+
+      if (estado.seleccionado) {
+        setTimeout(() => {
+          $("editor").scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }, 80);
+      }
     }
 
     function elimArchivo(id) {
-        estado.archivos = estado.archivos.filter(a => a.id !== id);
-        if (estado.seleccionado === id) estado.seleccionado = null;
-        render();
+      estado.archivos = estado.archivos.filter(a => a.id !== id);
+
+      if (estado.seleccionado === id) {
+        estado.seleccionado = null;
+      }
+
+      render();
     }
 
     function updCampo(input) {
-        const a = estado.archivos.find(x => x.id === input.dataset.fid);
-        if (!a) return;
-        const { key, type } = input.dataset;
-        if (type === 'standard') a.metadatos.estandar[key] = input.value;
-        else a.metadatos.personalizados[key] = input.value;
+      const archivo = estado.archivos.find(a => a.id === input.dataset.fid);
+      if (!archivo) return;
 
-        a.tieneCambios = JSON.stringify(a.metadatos.estandar) !== JSON.stringify(a.originales.estandar)
-                      || JSON.stringify(a.metadatos.personalizados) !== JSON.stringify(a.originales.personalizados);
-        renderLista(); renderToolbar();
+      const { key, type } = input.dataset;
+
+      if (type === "standard") {
+        archivo.metadatos.estandar[key] = input.value;
+      } else {
+        archivo.metadatos.personalizados[key] = input.value;
+      }
+
+      calcularCambios(archivo);
+      renderToolbar();
+      renderLista();
     }
 
-    function resetMeta(id) {
-        const a = estado.archivos.find(x => x.id === id);
-        if (!a) return;
-        a.metadatos.estandar = { ...a.originales.estandar };
-        a.metadatos.personalizados = { ...a.originales.personalizados };
-        a.tieneCambios = false;
-        render();
-        toast('Metadatos reseteados', 'info');
+    function addCampoCustom(id) {
+      const archivo = estado.archivos.find(a => a.id === id);
+      if (!archivo) return;
+
+      let nombre = "nuevo_campo";
+      let contador = 1;
+
+      while (Object.prototype.hasOwnProperty.call(archivo.metadatos.personalizados, nombre)) {
+        nombre = "nuevo_campo_" + contador++;
+      }
+
+      archivo.metadatos.personalizados[nombre] = "";
+      calcularCambios(archivo);
+      render();
+
+      setTimeout(() => {
+        const input = document.querySelector(
+          `.field-name-input[data-oldkey="${CSS.escape(nombre)}"]`
+        );
+
+        if (input) {
+          input.focus();
+          input.select();
+        }
+      }, 60);
     }
 
-    // --- Campos personalizados: crear / eliminar / renombrar ---
-    function addCampoCustom(fid) {
-        const a = estado.archivos.find(x => x.id === fid);
-        if (!a) return;
-        let name = 'nuevo_campo';
-        let i = 1;
-        while (a.metadatos.personalizados.hasOwnProperty(name)) { name = 'nuevo_campo_' + (i++); }
-        a.metadatos.personalizados[name] = '';
-        a.tieneCambios = true;
-        render();
-        // Focus el input del nombre recién creado
-        setTimeout(() => {
-            const inp = document.querySelector(`.field-name-input[data-oldkey="${name}"]`);
-            if (inp) { inp.focus(); inp.select(); }
-        }, 60);
-    }
+    function removeCampoCustom(id, clave) {
+      const archivo = estado.archivos.find(a => a.id === id);
+      if (!archivo) return;
 
-    function removeCampoCustom(fid, key) {
-        const a = estado.archivos.find(x => x.id === fid);
-        if (!a) return;
-        delete a.metadatos.personalizados[key];
-        a.tieneCambios = JSON.stringify(a.metadatos.estandar) !== JSON.stringify(a.originales.estandar)
-                      || JSON.stringify(a.metadatos.personalizados) !== JSON.stringify(a.originales.personalizados);
-        render();
+      delete archivo.metadatos.personalizados[clave];
+      calcularCambios(archivo);
+      render();
     }
 
     function updCampoNombre(input) {
-        const a = estado.archivos.find(x => x.id === input.dataset.fid);
-        if (!a) return;
-        const oldKey = input.dataset.oldkey;
-        const newKey = input.value.trim();
-        if (!newKey || newKey === oldKey) return;
-        // No permitir nombres duplicados
-        if (a.metadatos.personalizados.hasOwnProperty(newKey) && newKey !== oldKey) {
-            input.value = oldKey;
-            toast('Ya existe un campo con ese nombre', 'warning');
-            return;
-        }
-        // Renombrar: borrar viejo, crear nuevo
-        const val = a.metadatos.personalizados[oldKey];
-        delete a.metadatos.personalizados[oldKey];
-        a.metadatos.personalizados[newKey] = val;
-        // Actualizar atributos DOM
-        input.dataset.oldkey = newKey;
-        const valInput = input.parentElement.querySelector('.field-input');
-        if (valInput) valInput.dataset.key = newKey;
-        a.tieneCambios = JSON.stringify(a.metadatos.estandar) !== JSON.stringify(a.originales.estandar)
-                      || JSON.stringify(a.metadatos.personalizados) !== JSON.stringify(a.originales.personalizados);
-        renderLista(); renderToolbar();
-        // NO renderizar editor (preserva foco)
+      const archivo = estado.archivos.find(a => a.id === input.dataset.fid);
+      if (!archivo) return;
+
+      const claveAntigua = input.dataset.oldkey;
+      const claveNueva = input.value.trim();
+
+      if (!claveNueva || claveNueva === claveAntigua) {
+        input.value = claveAntigua;
+        return;
+      }
+
+      if (/[\s()[\]{}<>/%#]/.test(claveNueva)) {
+        input.value = claveAntigua;
+        toast("El nombre no puede contener espacios ni caracteres especiales de PDF.", "warning");
+        return;
+      }
+
+      if (
+        Object.prototype.hasOwnProperty.call(archivo.metadatos.personalizados, claveNueva) &&
+        claveNueva !== claveAntigua
+      ) {
+        input.value = claveAntigua;
+        toast("Ya existe un campo con ese nombre.", "warning");
+        return;
+      }
+
+      const valor = archivo.metadatos.personalizados[claveAntigua];
+
+      delete archivo.metadatos.personalizados[claveAntigua];
+      archivo.metadatos.personalizados[claveNueva] = valor;
+
+      input.dataset.oldkey = claveNueva;
+
+      const inputValor = input.parentElement.querySelector(".field-input");
+      if (inputValor) inputValor.dataset.key = claveNueva;
+
+      calcularCambios(archivo);
+      renderToolbar();
+      renderLista();
     }
 
-    // ============================================================
-    // EXPORTACIÓN
-    // ============================================================
-    async function aplicarMetadatos(a) {
-        const pdfDoc = await PDFLib.PDFDocument.load(a.bytesOrig);
-        const m = a.metadatos.estandar;
-        if (m.title)       pdfDoc.setTitle(m.title);
-        if (m.author)      pdfDoc.setAuthor(m.author);
-        if (m.subject)     pdfDoc.setSubject(m.subject);
-        if (m.keywords)    pdfDoc.setKeywords(m.keywords);
-        if (m.creationDate) try { pdfDoc.setCreationDate(new Date(m.creationDate)); } catch(e) {}
-        if (m.modDate)      try { pdfDoc.setModificationDate(new Date(m.modDate)); } catch(e) {}
+    function resetMeta(id) {
+      const archivo = estado.archivos.find(a => a.id === id);
+      if (!archivo) return;
 
-        // Campos personalizados en Info dict
-        try {
-            const ref = pdfDoc.context.trailerInfo.Info;
-            if (ref) {
-                const info = pdfDoc.context.lookup(ref);
-                if (info) {
-                    for (const [k, v] of Object.entries(a.metadatos.personalizados)) {
-                        info.set(PDFLib.PDFName.of(k), PDFLib.PDFString.of(v));
-                    }
-                }
-            }
-        } catch (e) { /* campos custom no aplicables */ }
+      archivo.metadatos.estandar = { ...archivo.originales.estandar };
+      archivo.metadatos.personalizados = { ...archivo.originales.personalizados };
 
-        return await pdfDoc.save({ useObjectStreams: true });
+      calcularCambios(archivo);
+      render();
+      toast("Metadatos restaurados al estado original.", "info");
+    }
+
+    async function aplicarMetadatos(archivo) {
+      const pdfDoc = await PDFLib.PDFDocument.load(archivo.bytesOrig, {
+        ignoreEncryption: true,
+        updateMetadata: false
+      });
+
+      const info = getInfoDict(pdfDoc, true);
+      const metadatos = archivo.metadatos.estandar;
+
+      ponerTextoInfo(info, "Title", metadatos.title);
+      ponerTextoInfo(info, "Author", metadatos.author);
+      ponerTextoInfo(info, "Subject", metadatos.subject);
+      ponerTextoInfo(info, "Keywords", metadatos.keywords);
+
+      if (metadatos.creationDate) {
+        const fecha = new Date(metadatos.creationDate + "T12:00:00");
+
+        if (!isNaN(fecha.getTime())) {
+          pdfDoc.setCreationDate(fecha);
+        }
+      } else {
+        info.delete(PDFLib.PDFName.of("CreationDate"));
+      }
+
+      if (metadatos.modDate) {
+        const fecha = new Date(metadatos.modDate + "T12:00:00");
+
+        if (!isNaN(fecha.getTime())) {
+          pdfDoc.setModificationDate(fecha);
+        }
+      } else {
+        info.delete(PDFLib.PDFName.of("ModDate"));
+      }
+
+      for (const claveOriginal of Object.keys(archivo.originales.personalizados)) {
+        if (!Object.prototype.hasOwnProperty.call(
+          archivo.metadatos.personalizados,
+          claveOriginal
+        )) {
+          info.delete(PDFLib.PDFName.of(claveOriginal));
+        }
+      }
+
+      for (const [clave, valor] of Object.entries(archivo.metadatos.personalizados)) {
+        const nombre = clave.trim();
+
+        if (!nombre) continue;
+
+        if (/[\s()[\]{}<>/%#]/.test(nombre)) {
+          throw new Error(`Nombre de campo no válido: "${nombre}"`);
+        }
+
+        ponerTextoInfo(info, nombre, valor);
+      }
+
+      return await pdfDoc.save({
+        useObjectStreams: true,
+        updateFieldAppearances: false
+      });
     }
 
     async function exportarPDF(id) {
-        const a = estado.archivos.find(x => x.id === id);
-        if (!a) return;
-        try {
-            a.estado = 'exportando'; renderLista();
-            const bytes = await aplicarMetadatos(a);
-            dlBlob(new Blob([bytes], { type: 'application/pdf' }), a.nombre);
-            a.estado = 'exportado';
-            toast(a.nombre + ' exportado ✓', 'success');
-        } catch (e) {
-            a.estado = 'error';
-            toast('Error: ' + e.message, 'error');
-        }
-        render();
+      const archivo = estado.archivos.find(a => a.id === id);
+      if (!archivo) return;
+
+      try {
+        archivo.estado = "exportando";
+        renderLista();
+
+        const bytes = await aplicarMetadatos(archivo);
+
+        descargarBlob(
+          new Blob([bytes], { type: "application/pdf" }),
+          archivo.nombre
+        );
+
+        archivo.estado = "exportado";
+        toast("PDF exportado correctamente.", "success");
+      } catch (e) {
+        archivo.estado = "error";
+        toast("Error al exportar: " + e.message, "error");
+        console.error(e);
+      }
+
+      render();
     }
 
     async function exportarTodo() {
-        const conCambios = estado.archivos.filter(a => a.tieneCambios);
-        if (!conCambios.length) { toast('No hay cambios para exportar', 'warning'); return; }
+      const modificados = estado.archivos.filter(a => a.tieneCambios);
 
-        toast('Generando ZIP con ' + conCambios.length + ' PDFs...', 'info');
-        const zip = new JSZip();
-        let ok = 0, fail = 0;
+      if (!modificados.length) {
+        toast("No hay archivos con cambios.", "warning");
+        return;
+      }
 
-        for (const a of conCambios) {
-            try {
-                const bytes = await aplicarMetadatos(a);
-                zip.file(a.nombre, bytes);
-                a.estado = 'exportado';
-                ok++;
-            } catch (e) {
-                toast('Error con ' + a.nombre + ': ' + e.message, 'error');
-                fail++;
-            }
+      const zip = new JSZip();
+      let correctos = 0;
+      let errores = 0;
+
+      toast("Generando ZIP con " + modificados.length + " PDF(s)...", "info");
+
+      for (const archivo of modificados) {
+        try {
+          const bytes = await aplicarMetadatos(archivo);
+          zip.file(archivo.nombre, bytes);
+          archivo.estado = "exportado";
+          correctos++;
+        } catch (e) {
+          console.error("Error en " + archivo.nombre, e);
+          archivo.estado = "error";
+          errores++;
         }
+      }
 
-        if (ok) {
-            const blob = await zip.generateAsync({ type: 'blob' });
-            dlBlob(blob, 'PDFs_modificados.zip');
-        }
-        toast(ok + ' PDFs exportados' + (fail ? ', ' + fail + ' errores' : ''), ok ? 'success' : 'error');
-        render();
+      if (correctos) {
+        const blob = await zip.generateAsync({ type: "blob" });
+        descargarBlob(blob, "PDFs_modificados.zip");
+      }
+
+      render();
+
+      toast(
+        correctos + " exportado(s)" + (errores ? " · " + errores + " con error" : ""),
+        correctos ? "success" : "error"
+      );
     }
 
-    function dlBlob(blob, name) {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = name;
-        document.body.appendChild(a); a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 5000);
+    function descargarBlob(blob, nombre) {
+      const url = URL.createObjectURL(blob);
+      const enlace = document.createElement("a");
+
+      enlace.href = url;
+      enlace.download = nombre;
+      document.body.appendChild(enlace);
+      enlace.click();
+      enlace.remove();
+
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
     }
 
-    // ============================================================
-    // DRAG & DROP + FILE INPUT
-    // ============================================================
     function initDragDrop() {
-        const dz = $('dropZone'), fi = $('fileInput');
-        dz.addEventListener('click', () => fi.click());
-        dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
-        dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
-        dz.addEventListener('drop', async e => {
-            e.preventDefault(); dz.classList.remove('dragover');
-            const files = [];
-            for (const item of e.dataTransfer.items) {
-                const entry = item.webkitGetAsEntry ? item.webkitGetAsEntry() : null;
-                if (entry) await traverseEntry(entry, files);
-                else if (item.kind === 'file') { const f = item.getAsFile(); if (f) files.push(f); }
-            }
-            handleFiles(files);
-        });
-        fi.addEventListener('change', e => { handleFiles(Array.from(e.target.files)); fi.value = ''; });
+      const dropZone = $("dropZone");
+      const fileInput = $("fileInput");
+
+      dropZone.addEventListener("click", () => fileInput.click());
+
+      dropZone.addEventListener("dragover", e => {
+        e.preventDefault();
+        dropZone.classList.add("dragover");
+      });
+
+      dropZone.addEventListener("dragleave", () => {
+        dropZone.classList.remove("dragover");
+      });
+
+      dropZone.addEventListener("drop", async e => {
+        e.preventDefault();
+        dropZone.classList.remove("dragover");
+
+        const archivos = [];
+
+        for (const item of e.dataTransfer.items) {
+          const entry = item.webkitGetAsEntry ? item.webkitGetAsEntry() : null;
+
+          if (entry) {
+            await recorrerEntrada(entry, archivos);
+          } else if (item.kind === "file") {
+            const archivo = item.getAsFile();
+            if (archivo) archivos.push(archivo);
+          }
+        }
+
+        handleFiles(archivos);
+      });
+
+      fileInput.addEventListener("change", e => {
+        handleFiles(Array.from(e.target.files));
+        fileInput.value = "";
+      });
     }
 
-    async function traverseEntry(entry, out) {
-        if (entry.isFile) {
-            const f = await new Promise(r => entry.file(r));
-            out.push(f);
-        } else if (entry.isDirectory) {
-            const reader = entry.createReader();
-            const entries = await new Promise(r => reader.readEntries(r));
-            for (const e of entries) await traverseEntry(e, out);
+    async function recorrerEntrada(entry, destino) {
+      if (entry.isFile) {
+        const archivo = await new Promise(resolve => entry.file(resolve));
+        destino.push(archivo);
+        return;
+      }
+
+      if (entry.isDirectory) {
+        const reader = entry.createReader();
+
+        async function leerLote() {
+          const entradas = await new Promise(resolve => reader.readEntries(resolve));
+
+          if (!entradas.length) return;
+
+          for (const entrada of entradas) {
+            await recorrerEntrada(entrada, destino);
+          }
+
+          await leerLote();
         }
+
+        await leerLote();
+      }
     }
 
     async function handleFiles(files) {
-        const pdfs = files.filter(f => f.name.toLowerCase().endsWith('.pdf'));
-        const skip = files.length - pdfs.length;
-        if (skip) toast(skip + ' archivo' + (skip > 1 ? 's' : '') + ' no-PDF ignorado' + (skip > 1 ? 's' : ''), 'warning');
-        if (!pdfs.length) { toast('No se encontraron PDFs', 'error'); return; }
+      const pdfs = files.filter(file => file.name.toLowerCase().endsWith(".pdf"));
+      const ignorados = files.length - pdfs.length;
 
-        $('loadingBar').classList.add('active');
-        toast('Procesando ' + pdfs.length + ' PDF...', 'info');
-        let ok = 0, err = 0;
+      if (ignorados) {
+        toast(ignorados + " archivo(s) no PDF ignorado(s).", "warning");
+      }
 
-        for (const f of pdfs) {
-            try {
-                if (!estado.archivos.find(a => a.nombre === f.name)) {
-                    estado.archivos.push(await parsearPDF(f));
-                    ok++;
-                }
-            } catch (e) {
-                toast(f.name + ': ' + e.message, 'error');
-                err++;
-            }
+      if (!pdfs.length) {
+        toast("No se encontraron archivos PDF.", "error");
+        return;
+      }
+
+      $("loadingBar").classList.add("active");
+      toast("Procesando " + pdfs.length + " PDF(s)...", "info");
+
+      let correctos = 0;
+      let errores = 0;
+
+      for (const file of pdfs) {
+        try {
+          const yaExiste = estado.archivos.some(
+            archivo => archivo.nombre === file.name && archivo.tamano === file.size
+          );
+
+          if (!yaExiste) {
+            estado.archivos.push(await parsearPDF(file));
+            correctos++;
+          }
+        } catch (e) {
+          console.error(e);
+          errores++;
+          toast(file.name + ": no se pudo abrir el PDF.", "error");
         }
+      }
 
-        $('loadingBar').classList.remove('active');
-        render();
-        toast(ok + ' PDF cargados' + (err ? ', ' + err + ' errores' : ''), ok ? 'success' : 'error');
+      $("loadingBar").classList.remove("active");
+      render();
+
+      toast(
+        correctos + " PDF(s) cargado(s)" +
+        (errores ? " · " + errores + " con error" : ""),
+        correctos ? "success" : "error"
+      );
     }
 
-    // ============================================================
-    // TOAST
-    // ============================================================
-    function toast(msg, type) {
-        document.querySelectorAll('.toast').forEach(t => t.remove());
-        const el = document.createElement('div');
-        el.className = 'toast toast-' + (type || 'info');
-        el.textContent = msg;
-        document.body.appendChild(el);
-        requestAnimationFrame(() => el.classList.add('show'));
-        setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); }, 2500);
+    function toast(mensaje, tipo = "info") {
+      document.querySelectorAll(".toast").forEach(el => el.remove());
+
+      const elemento = document.createElement("div");
+      elemento.className = "toast toast-" + tipo;
+      elemento.textContent = mensaje;
+
+      document.body.appendChild(elemento);
+
+      requestAnimationFrame(() => elemento.classList.add("show"));
+
+      setTimeout(() => {
+        elemento.classList.remove("show");
+        setTimeout(() => elemento.remove(), 300);
+      }, 2600);
     }
 
-    // ============================================================
-    // INIT
-    // ============================================================
-    document.addEventListener('DOMContentLoaded', () => {
-        initDragDrop();
-        $('searchInput').addEventListener('input', e => { estado.filtro = e.target.value; renderLista(); });
-        document.addEventListener('keydown', e => { if (e.key === 'Escape' && estado.seleccionado) { estado.seleccionado = null; render(); } });
+    document.addEventListener("DOMContentLoaded", () => {
+      initDragDrop();
+
+      $("searchInput").addEventListener("input", e => {
+        estado.filtro = e.target.value;
+        renderLista();
+      });
+
+      document.addEventListener("keydown", e => {
+        if (e.key === "Escape" && estado.seleccionado) {
+          estado.seleccionado = null;
+          render();
+        }
+      });
     });
-    </script>
+  </script>
 </body>
 </html>
